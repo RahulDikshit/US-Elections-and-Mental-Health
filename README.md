@@ -63,5 +63,5 @@ Provide step-by-step instructions to install the project locally.
 ### Usage
 
    ```bash
-   python main.py
+   python ./datamanagement/main.py
    ```
