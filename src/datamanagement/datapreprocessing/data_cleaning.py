@@ -1,8 +1,8 @@
 import pandas as pd
 
 # Load Historical and Real-time News Data
-historical_news_data = pd.read_csv("D:\SRH_Heidelberg\Data_Management_2\data-management-2\src\datamanagement\data\historical_news_data.csv")
-#realtime_news_data = pd.read_csv("D:\SRH_Heidelberg\Data_Management_2\data-management-2\src\datamanagement\data\v1-realtime_data-news-api-2024-10-18.csv")
+historical_news_data = pd.read_csv("../data/historical_news_data.csv")
+#realtime_news_data = pd.read_csv("../data/v1-realtime_data-news-api-2024-10-18.csv")
 
 # Function to clean Historical News Data
 def clean_historical_news(df):
