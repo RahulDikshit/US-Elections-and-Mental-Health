@@ -19,11 +19,13 @@ def clean_historical_news(df):
     # dropping any rows with invalid dates
     df.dropna(subset=['article_publishedAt'], inplace=True)
     
+    df[["source_id", "article_description", "article_urlToImage"]] = \
+        df[["source_id", "article_description", "article_urlToImage"]]\
+            .fillna("No Information Available")
     # removing leading/trailing spaces from strings
     df['author_name'] = df['author_name'].str.strip()
     df['article_title'] = df['article_title'].str.strip()
     df['article_description'] = df['article_description'].str.strip()
-    
     return df
 
 # Function to clean Real-time News Data
@@ -45,7 +47,6 @@ def clean_historical_news(df):
 #     df['author_name'] = df['author_name'].str.strip()
 #     df['article_title'] = df['article_title'].str.strip()
 #     df['article_description'] = df['article_description'].str.strip()
-    
 #     return df
 
 
@@ -53,7 +54,7 @@ cleaned_historical_data = clean_historical_news(historical_news_data)
 #cleaned_realtime_data = clean_realtime_news(realtime_news_data)
 
 # saving the cleaned datasets to csv files
-cleaned_historical_data.to_csv("cleaned_historical_news.csv", index=False)
+cleaned_historical_data.to_csv("/cleaned_historical_news.csv", index=False)
 #cleaned_realtime_data.to_csv("cleaned_realtime_news.csv", index=False)
 
 print("Data cleaning complete. Cleaned data saved as CSV.")

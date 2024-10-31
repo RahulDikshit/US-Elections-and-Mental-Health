@@ -1,90 +1,136 @@
-# Use a pipeline as a high-level helper
+import pandas as pd
+from collections import Counter
+import os
+import gc
+import torch
 from transformers import pipeline
+import spacy
+from dotenv import load_dotenv
 
-pipe = pipeline(
-    "text-classification",
-    model="SamLowe/roberta-base-go_emotions",
-    device=0
-    )
-result = pipe("Happy for life!")
-print(result)
+load_dotenv()
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+
+def create_features_from_pretrained_models(
+                        model_configuration: dict,
+                        df: pd.DataFrame,
+                        columns: list
+                        ) -> pd.DataFrame:
+    """ Generate features from the pretrained models for the specified columns
+    in the given dataframe and return DataFrame
 
 
-model_configuration = {
-                        "emotions":
-                        {
-                            "task": "text-classification", 
-                            "model": "SamLowe/roberta-base-go_emotions",
-                            "device": 0,
-                        },
-                        "fake-real":  {
-                                 "task": "text-classification", 
-                                 "model":"openai-community/roberta-base-openai-detector",
-                                 "device": 0,
-                            
-                        },
-                        "hate-no_hate":{
-                                 "task": "text-classification",
-                                 "model":"facebook/roberta-hate-speech-dynabench-r4-target",
-                                 "device": 0,
-                            },
+    Arguments:
 
-                        "spam-ham": {
-                                 "task": "text-classification",
-                                 "model":"mshenoda/roberta-spam",
-                                 "device": 0,
-                            },
-                        "sarcasm": 
-                            {
-                                 "task": "text-classification",
-                                 "model":"helinivan/multilingual-sarcasm-detector",
-                                 "device": 0,
-                            },
-                        "fake_news": {
-                                 "task": "text-classification",
-                                 "model":"mrm8488/bert-tiny-finetuned-fake-news-detection",
-                                 "device": 0,
-                        },
-                        "toxicity": {
+        - model_configuration: a dict in which the key stats the feature to be
+            extracted values of model parameters in a dict
+        - df: a pandas.DataFrame on which the data is stored
+        - columns: the features on which the models to be used
 
-                                 "task": "text-classification",
-                                 "model":"unitary/toxic-bert",
-                                 "device": 0,
-                        },
-                        "offensive_detection": {
-                                 "task": "text-classification",
-                                 "model":"Hate-speech-CNERG/dehatebert-mono-English",
-                                 "device": 0,
-                        },
-                        "argument": {
-                                 "task": "text-classification",
-                                 "model":"UKPLab/bert-base-argument-unit-classification",
-                                 "device": 0,
-                        },
-                        "irony": {
-                                 "task": "text-classification",
-                                 "model":"SkolkovoInstitute/roberta-ironydetection",
-                                 "device": 0,
-                        },
-                        "profanity": {
-                                 "task": "text-classification",
-                                 "model":"s-nlp/profanity-checker",
-                                 "device": 0,
-                        },
-                        "subjectivity-objectivity ": {
-                                 "task": "text-classification",
-                                 "model":"modelsubjectivity/bart-large-mnli-subjectivity",
-                                 "device": 0,
-                        },
-                        "intent": {
-                                 "task": "text-classification",
-                                 "model":"mrm8488/t5-base-finetuned-e2m-intent-detection",
-                                 "device": 0,
-                        },
-                        "political_bias": {
-                                 "task": "text-classification",
-                                 "model":"evanmiller/political-bias-classifier",
-                                 "device": 0,
-                        },
-                    }
-                    
+    Returns:
+
+        - pd.DataFrame: A dataframe with updated features
+
+    """
+
+    def retrieve_model_response(text: str) -> str:
+        """ Generate the model response from the given text and return result
+        generated
+
+        Arguments:
+
+            - text: a text to generate the model response
+
+        Returns:
+
+            - str: a response of the model generated
+
+        """
+        if not isinstance(text, str):
+            text = " "
+        if text is None:
+            text = " "
+        results = pipe(text)
+        if len(results) <= 0:
+            return " "
+
+        try:
+            label = results[0].get("label")
+        except Exception as oops:
+            print(f"Error occurred while retrieve_model_response as {oops}")
+            label = "None"
+        return label
+
+    # All the features to be used
+    for column in columns:
+        # Model configuration with model parameters
+        for key, value in model_configuration.items():
+            # Prefix to be stored as feature in the dataframe
+            column_prefix = f"{column}_{key}"
+            # Initiate with the None
+            df[column_prefix] = "None"
+            try:
+                # set the model configuration
+                pipe = pipeline(**value, token=os.getenv("HUGGING_FACE_API"))
+                df[column_prefix] = df[column].apply(retrieve_model_response)
+
+                # Delete the unused variables and Empty the cuda cache
+                # to optimize the system
+                del pipe
+                gc.collect()
+                torch.cuda.empty_cache()
+            except Exception as oops:
+                print(f"error in {df[column_prefix]}")
+                print(f"Error occurred while extracting feature as {oops}")
+    return df
+
+
+def retrieve_counts_on_part_of_speech(df: pd.DataFrame,
+                                      columns: list) -> pd.DataFrame:
+    """ Retrieve the counts on part of speech of for all the features given 
+    dataframe. Return a pandas dataframe with the updated features of part 
+    of speech
+    
+    Arguments: 
+
+        - df: a pandas Dataframe
+        - columns: a list of features on which the part of speech is
+          to be applied
+
+    Returns: 
+
+        - Dataframe: with updated features of part of speech 
+
+    """
+
+    def count_part_of_speech(text: str) -> Counter:
+        """ Calculates the part of speech for the given text
+
+        Arguments: 
+
+            - text: a str to count the part of speech
+
+        Returns: 
+
+            - Counter: a value counts of part of speech 
+
+        """
+        tokens = nlp(str(text))
+        pos_counts = Counter([token.pos_ for token in tokens])
+        print(pos_counts)
+        return pos_counts
+    
+    nlp = spacy.load("en_core_web_sm")
+    for column in columns:
+        df[f"{column}_pos_counts"] = df[column].apply(count_part_of_speech)
+    return df
+
+
+# new_df = create_transformation_for_feature(model_configuration, df, ["article_description", "article_title"])
+# new_df.to_csv("../data/latest_transformation.csv",index=False)
+
+# This is used after Load in the dbt
+# transformed_df = pd.read_csv("../data/latest_transformation.csv")
+# nlp_df = retrieve_counts_on_part_of_speech(
+#             df=transformed_df,
+#             columns=["article_content", "article_description", "article_title"]
+#             )
