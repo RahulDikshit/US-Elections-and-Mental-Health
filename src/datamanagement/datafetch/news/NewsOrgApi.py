@@ -76,6 +76,7 @@ class NewsORGAPI:
                     status = all_articles.get("status", "failed")
                     if status == "ok":
                         all_articles = all_articles.get("articles", [])
+                        print(all_articles[0])
                         # articles from the api are converted to the list
                         converted_articles = list(self._format_articles_into_list(all_articles))
                         # Create a new Dataframe with converted list
@@ -83,6 +84,8 @@ class NewsORGAPI:
                                 "article_description","article_urlToImage","article_publishedAt", "article_content"])
                         # Concat the default dataframe with the new dataframe
                         df = pd.concat([df, new_df])
+                    break
+                break
         except Exception as oops:
             print(f"Erorr occurred as {oops}")
 

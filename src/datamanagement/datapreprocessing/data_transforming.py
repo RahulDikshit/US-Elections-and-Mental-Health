@@ -8,8 +8,7 @@ import spacy
 from dotenv import load_dotenv
 
 load_dotenv()
-os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 def create_features_from_pretrained_models(
                         model_configuration: dict,
                         df: pd.DataFrame,
@@ -18,20 +17,15 @@ def create_features_from_pretrained_models(
     """ Generate features from the pretrained models for the specified columns
     in the given dataframe and return DataFrame
 
-
     Arguments:
-
         - model_configuration: a dict in which the key stats the feature to be
             extracted values of model parameters in a dict
         - df: a pandas.DataFrame on which the data is stored
         - columns: the features on which the models to be used
 
     Returns:
-
         - pd.DataFrame: A dataframe with updated features
-
     """
-
     def retrieve_model_response(text: str) -> str:
         """ Generate the model response from the given text and return result
         generated
@@ -70,7 +64,7 @@ def create_features_from_pretrained_models(
             df[column_prefix] = "None"
             try:
                 # set the model configuration
-                pipe = pipeline(**value, token=os.getenv("HUGGING_FACE_API"))
+                pipe = pipeline(**value)
                 df[column_prefix] = df[column].apply(retrieve_model_response)
 
                 # Delete the unused variables and Empty the cuda cache
@@ -91,13 +85,11 @@ def retrieve_counts_on_part_of_speech(df: pd.DataFrame,
     of speech
     
     Arguments: 
-
         - df: a pandas Dataframe
         - columns: a list of features on which the part of speech is
           to be applied
 
     Returns: 
-
         - Dataframe: with updated features of part of speech 
 
     """
@@ -106,31 +98,44 @@ def retrieve_counts_on_part_of_speech(df: pd.DataFrame,
         """ Calculates the part of speech for the given text
 
         Arguments: 
-
             - text: a str to count the part of speech
 
         Returns: 
-
             - Counter: a value counts of part of speech 
-
         """
         tokens = nlp(str(text))
-        pos_counts = Counter([token.pos_ for token in tokens])
-        print(pos_counts)
+        pos_counts = dict(Counter([token.pos_ for token in tokens]))
         return pos_counts
-    
+
+    def search_all_organization(text: str) -> Counter:
+        """ Calculates the organization for the given text
+
+        Arguments: 
+            - text: a str to count the part of speech
+
+        Returns: 
+            - Counter: a value counts of part of speech 
+        """
+        tokens = nlp(str(text))
+        organizations = dict(Counter([ent.text for ent in tokens.ents if ent.label_ == "ORG"]))
+        return organizations
+
     nlp = spacy.load("en_core_web_sm")
     for column in columns:
         df[f"{column}_pos_counts"] = df[column].apply(count_part_of_speech)
+        df[f"{column}_org_counts"] = df[column].apply(search_all_organization)
     return df
 
 
-# new_df = create_transformation_for_feature(model_configuration, df, ["article_description", "article_title"])
-# new_df.to_csv("../data/latest_transformation.csv",index=False)
+
+# new_df = create_features_from_pretrained_models(model_configuration, df, ["article_description", "article_title"])
+# new_df.to_csv("../data/transformed_data.csv",index=False)
 
 # This is used after Load in the dbt
-# transformed_df = pd.read_csv("../data/latest_transformation.csv")
+# transformed_df = pd.read_csv("../data/transformed_data.csv")
 # nlp_df = retrieve_counts_on_part_of_speech(
 #             df=transformed_df,
 #             columns=["article_content", "article_description", "article_title"]
 #             )
+# nlp_df.to_csv("transformation_new.csv",index=False)
+# print("Hello")

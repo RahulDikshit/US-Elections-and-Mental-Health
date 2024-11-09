@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Load Historical and Real-time News Data
-historical_news_data = pd.read_csv("../data/historical_news_data.csv")
+# historical_news_data = pd.read_csv("../data/historical_news_data.csv")
 #realtime_news_data = pd.read_csv("../data/v1-realtime_data-news-api-2024-10-18.csv")
 
 # Function to clean Historical News Data
@@ -50,11 +50,11 @@ def clean_historical_news(df):
 #     return df
 
 
-cleaned_historical_data = clean_historical_news(historical_news_data)
-#cleaned_realtime_data = clean_realtime_news(realtime_news_data)
+# cleaned_historical_data = clean_historical_news(historical_news_data)
+# #cleaned_realtime_data = clean_realtime_news(realtime_news_data)
 
-# saving the cleaned datasets to csv files
-cleaned_historical_data.to_csv("/cleaned_historical_news.csv", index=False)
-#cleaned_realtime_data.to_csv("cleaned_realtime_news.csv", index=False)
+# # saving the cleaned datasets to csv files
+# cleaned_historical_data.to_csv("/cleaned_historical_news.csv", index=False)
+# #cleaned_realtime_data.to_csv("cleaned_realtime_news.csv", index=False)
 
-print("Data cleaning complete. Cleaned data saved as CSV.")
+# print("Data cleaning complete. Cleaned data saved as CSV.")
