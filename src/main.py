@@ -150,6 +150,11 @@ def historical_pipeline():
     # Create a function for database and call it
     main(transformed_df,db_name="newsdb")
     # Create a function to insert into bigquery and call it
+    load_sqlite_to_bigquery('news_database.db', 'newsanalytics-440610-81d148518740.json', 'newsanalytics-440610', 'testnews')
     
 
-historical_pipeline()
+#historical_pipeline()
+# transformed_df = pd.read_csv("transformed_data.csv")
+# main(transformed_df,db_name="newsdb1")
+
+load_sqlite_to_bigquery('newsdb1.db', 'newsanalytics-440610-81d148518740.json', 'newsanalytics-440610', 'testnews1')

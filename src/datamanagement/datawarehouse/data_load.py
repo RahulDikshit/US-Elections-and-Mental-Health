@@ -46,4 +46,4 @@ def load_sqlite_to_bigquery(sqlite_db_path, credentials_path, project_id, datase
     print("Data successfully loaded into BigQuery!")
 
 # Example usage
-load_sqlite_to_bigquery('news_database.db', 'newsanalytics-440610-81d148518740.json', 'newsanalytics-440610', 'demo')
+#load_sqlite_to_bigquery('newsdb1.db', 'newsanalytics-440610-81d148518740.json', 'newsanalytics-440610', 'testnews')

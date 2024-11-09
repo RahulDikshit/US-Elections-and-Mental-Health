@@ -8,10 +8,10 @@ def load_csv_to_dataframe(csv_file_path):
 
 def generate_uuids(data):
     """Generate UUIDs for each required column in the DataFrame."""
-    data['article_id'] = [str(uuid.uuid4()) for _ in range(len(data))]
-    data['article_title_id'] = [str(uuid.uuid4()) for _ in range(len(data))]
-    data['article_description_id'] = [str(uuid.uuid4()) for _ in range(len(data))]
-    data['article_content_id'] = [str(uuid.uuid4()) for _ in range(len(data))]
+    data['article_id'] = [str(uuid.uuid4()) for _ in range(data.shape[0])]
+    data['article_title_id'] = [str(uuid.uuid4()) for _ in range(data.shape[0])]
+    data['article_description_id'] = [str(uuid.uuid4()) for _ in range(data.shape[0])]
+    data['article_content_id'] = [str(uuid.uuid4()) for _ in range(data.shape[0])]
     return data
 
 def create_sqlite_connection(db_name):
@@ -50,10 +50,7 @@ def create_tables(cursor):
         CREATE TABLE IF NOT EXISTS DimArticleTitle (
             article_title_id TEXT PRIMARY KEY,
             article_title VARCHAR(500),
-            article_title_emotions VARCHAR(500),
-            article_title_hate_no_hate VARCHAR(10),
-            article_title_offensive_detection VARCHAR(20),
-            article_title_pos_count JSON
+            article_title_pos_counts JSON
         );
     ''')
     
@@ -62,10 +59,7 @@ def create_tables(cursor):
         CREATE TABLE IF NOT EXISTS DimArticleDescription (
             article_description_id TEXT PRIMARY KEY,
             article_description TEXT,
-            article_description_emotions VARCHAR(50),
-            article_description_hate_no_hate VARCHAR(10),
-            article_description_offensive_detection VARCHAR(20),
-            article_description_pos_count JSON
+            article_description_pos_counts JSON
         );
     ''')
     
@@ -87,16 +81,15 @@ def insert_data(cursor, table_name, data_frame, columns):
             VALUES ({placeholders})
         ''', tuple(row[col] for col in columns))
 
-def main(csv_file_path, db_name="newsdb"):
+def main(data, db_name="newsdb"):
     # Load and process data
-    data = load_csv_to_dataframe(csv_file_path)
     data = generate_uuids(data)
 
     # Create data frames for different tables
     fact_news_df = data[['article_id', 'source_id', 'source_name', 'author_name']].drop_duplicates()
     dim_article_df = data[['article_id', 'article_title_id', 'article_description_id', 'article_content_id', 'article_urlToImage', 'article_publishedAt']].drop_duplicates()
-    dim_article_title_df = data[['article_title_id', 'article_title', 'article_title_emotions', 'article_title_hate-no_hate', 'article_title_offensive_detection', 'article_title_pos_counts']].drop_duplicates()
-    dim_article_description_df = data[['article_description_id', 'article_description', 'article_description_emotions', 'article_description_hate-no_hate', 'article_description_offensive_detection', 'article_description_pos_counts']].drop_duplicates()
+    dim_article_title_df = data[['article_title_id', 'article_title', 'article_title_pos_counts']].drop_duplicates()
+    dim_article_description_df = data[['article_description_id', 'article_description', 'article_description_pos_counts']].drop_duplicates()
     dim_article_content_df = data[['article_content_id', 'article_content', 'article_content_pos_counts']].drop_duplicates()
 
     # Connect to SQLite and create tables
@@ -107,8 +100,8 @@ def main(csv_file_path, db_name="newsdb"):
     # Insert data
     insert_data(cursor, 'FactNews', fact_news_df, ['article_id', 'source_id', 'source_name', 'author_name'])
     insert_data(cursor, 'DimArticle', dim_article_df, ['article_id', 'article_title_id', 'article_description_id', 'article_content_id', 'article_urlToImage', 'article_publishedAt'])
-    insert_data(cursor, 'DimArticleTitle', dim_article_title_df, ['article_title_id', 'article_title', 'article_title_emotions', 'article_title_hate-no_hate', 'article_title_offensive_detection', 'article_title_pos_counts'])
-    insert_data(cursor, 'DimArticleDescription', dim_article_description_df, ['article_description_id', 'article_description', 'article_description_emotions', 'article_description_hate-no_hate', 'article_description_offensive_detection', 'article_description_pos_counts'])
+    insert_data(cursor, 'DimArticleTitle', dim_article_title_df, ['article_title_id', 'article_title', 'article_title_pos_counts'])
+    insert_data(cursor, 'DimArticleDescription', dim_article_description_df, ['article_description_id', 'article_description',  'article_description_pos_counts'])
     insert_data(cursor, 'DimArticleContent', dim_article_content_df, ['article_content_id', 'article_content', 'article_content_pos_counts'])
 
     # Commit and close the connection
