@@ -81,7 +81,8 @@ def insert_data(cursor, table_name, data_frame, columns):
             VALUES ({placeholders})
         ''', tuple(row[col] for col in columns))
 
-def main(data, db_name="newsdb"):
+def create_and_insert_to_db(data, db_name="newsdb"):
+    """ Create and insert to the database """
     # Load and process data
     data = generate_uuids(data)
 
@@ -92,20 +93,24 @@ def main(data, db_name="newsdb"):
     dim_article_description_df = data[['article_description_id', 'article_description', 'article_description_pos_counts']].drop_duplicates()
     dim_article_content_df = data[['article_content_id', 'article_content', 'article_content_pos_counts']].drop_duplicates()
 
-    # Connect to SQLite and create tables
-    conn = create_sqlite_connection(f'{db_name}.db')
-    cursor = conn.cursor()
-    create_tables(cursor)
+    try:
+        # Connect to SQLite and create tables
+        conn = create_sqlite_connection(f'{db_name}.db')
+        cursor = conn.cursor()
+        create_tables(cursor)
 
-    # Insert data
-    insert_data(cursor, 'FactNews', fact_news_df, ['article_id', 'source_id', 'source_name', 'author_name'])
-    insert_data(cursor, 'DimArticle', dim_article_df, ['article_id', 'article_title_id', 'article_description_id', 'article_content_id', 'article_urlToImage', 'article_publishedAt'])
-    insert_data(cursor, 'DimArticleTitle', dim_article_title_df, ['article_title_id', 'article_title', 'article_title_pos_counts'])
-    insert_data(cursor, 'DimArticleDescription', dim_article_description_df, ['article_description_id', 'article_description',  'article_description_pos_counts'])
-    insert_data(cursor, 'DimArticleContent', dim_article_content_df, ['article_content_id', 'article_content', 'article_content_pos_counts'])
+        # Insert data
+        insert_data(cursor, 'FactNews', fact_news_df, ['article_id', 'source_id', 'source_name', 'author_name'])
+        insert_data(cursor, 'DimArticle', dim_article_df, ['article_id', 'article_title_id', 'article_description_id', 'article_content_id', 'article_urlToImage', 'article_publishedAt'])
+        insert_data(cursor, 'DimArticleTitle', dim_article_title_df, ['article_title_id', 'article_title', 'article_title_pos_counts'])
+        insert_data(cursor, 'DimArticleDescription', dim_article_description_df, ['article_description_id', 'article_description',  'article_description_pos_counts'])
+        insert_data(cursor, 'DimArticleContent', dim_article_content_df, ['article_content_id', 'article_content', 'article_content_pos_counts'])
+    except Exception as oops:
+        print("Error occurred while inserting the table as ", oops)
+        return False
 
     # Commit and close the connection
     conn.commit()
     conn.close()
-
     print("Data successfully loaded into the SQLite database!")
+    return True
