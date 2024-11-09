@@ -5,6 +5,8 @@ import datetime
 
 from datamanagement.datafetch.news import NewsORGAPI, WorldNewsAPI
 from datamanagement.datapreprocessing.model_config import model_configuration
+from datamanagement.database.db_load import main
+from datamanagement.datawarehouse.data_load import load_sqlite_to_bigquery
 from datamanagement.datapreprocessing.data_cleaning import clean_historical_news
 from datamanagement.datapreprocessing.data_transforming import (create_features_from_pretrained_models
                                                                 ,retrieve_counts_on_part_of_speech)
@@ -115,18 +117,39 @@ def retrieve_live_data(pre_output_filename:
 # date_30_days_ago = datetime.datetime.today() - datetime.timedelta(days=31)
 # date_30_days_ago_str = date_30_days_ago.strftime("%Y-%m-%d")
 
-try:
-    historical_data = world_news_api.retrieve_historical_data(
-                        offset=0,
-                        categories=WORLD_NEWS_CATEGORIES,
-                        start_date="2024-06-01",
-                        end_date="2024-07-01",
-                        n_post=2000
-                        )
-    historical_data.to_csv("datamanagement/data/all_categories-2024-06-01-2024-07-01.csv")
-except Exception as oops:
-    print(f"Error occurred while storing historical data as {oops}")
+# try:
+#     historical_data = world_news_api.retrieve_historical_data(
+#                         offset=0,
+#                         categories=WORLD_NEWS_CATEGORIES,
+#                         start_date="2024-06-01",
+#                         end_date="2024-07-01",
+#                         n_post=2000
+#                         )
+#     historical_data.to_csv("datamanagement/data/all_categories-2024-06-01-2024-07-01.csv")
+# except Exception as oops:
+#     print(f"Error occurred while storing historical data as {oops}")
 
 
 
-# def before_dbt_historical_data()
+def historical_pipeline():
+    # Load the final csv file
+    df = pd.read_csv(r"datamanagement\data\merged_output.csv")
+    print(df.columns)
+    print(df.shape)
+    # Clean that
+    clean_df = clean_historical_news(df)
+    print(clean_df.columns)
+    print(clean_df.shape)
+    # Transform pOS count
+    transformed_df = retrieve_counts_on_part_of_speech(
+                clean_df,
+                columns=["article_content", "article_description", "article_title"])
+    print(transformed_df.columns)
+    print(transformed_df.shape)
+    transformed_df.to_csv("transformed_data.csv")
+    # Create a function for database and call it
+    main(transformed_df,db_name="newsdb")
+    # Create a function to insert into bigquery and call it
+    
+
+historical_pipeline()
