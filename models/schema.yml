@@ -72,7 +72,7 @@ models:
       - name: pos_count
         description: "JSON object containing part-of-speech counts in the article title."
 
-  - name: description
+  - name: desc
     description: "Dimension table containing article descriptions."
     columns:
       - name: article_description_id
